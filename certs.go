@@ -56,6 +56,10 @@ func grabCert(host string, commChans CommChans) {
 		// Now we know the IP
 		certprobe.IP = ips[i].String()
 
+		if verbose {
+			fmt.Printf("> Trying IP %s\n", certprobe.IP)
+		}
+
 		// If we are dealing with IPv6, we need to add brackets.
 		var addr string
 		if ips[i].To4() != nil {
