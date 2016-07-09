@@ -2,10 +2,7 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
-	_ "github.com/mattn/go-sqlite3"
-	"io/ioutil"
-	"os"
+	_ "github.com/lib/pq"
 )
 
 var (
@@ -18,30 +15,14 @@ var (
 func SetupDB() {
 	var err error
 
-	if _, err := os.Stat(databaseURL); os.IsNotExist(err) {
-		// The database does not exist, attempt to create it
-		fmt.Print("Database not found, trying to initialize it...")
-		db, err = sql.Open("sqlite3", databaseURL)
-		checkErr(err)
-
-		body, err := ioutil.ReadFile("initdb.sql")
-		checkErr(err)
-
-		_, err = db.Exec(string(body))
-		checkErr(err)
-
-		db.Close()
-		fmt.Print(" done.\n")
-	}
-
 	// Open the database, being sure it has been installed
-	db, _ = sql.Open("sqlite3", databaseURL)
+	db, _ = sql.Open(databaseType, databaseURL)
 
 	// Prepare the requests we will be using
-	stmtAddFail, err = db.Prepare("INSERT INTO certificates (host, ip, failed, failure_error, timestamp) VALUES (?, ?, ?, ?, ?)")
+	stmtAddFail, err = db.Prepare("INSERT INTO certificates (host, ip, failed, failure_error, timestamp) VALUES ($1, $2, $3, $4, $5)")
 	checkErr(err)
 
-	stmtAddOk, err = db.Prepare("INSERT INTO certificates (host, ip, protocol, ciphersuite, certificate_idx, certificate_raw, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)")
+	stmtAddOk, err = db.Prepare("INSERT INTO certificates (host, ip, protocol, ciphersuite, certificate_idx, certificate_raw, timestamp) VALUES ($1, $2, $3, $4, $5, $6, $7)")
 	checkErr(err)
 }
 

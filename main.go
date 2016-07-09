@@ -13,6 +13,7 @@ import (
 var (
 	portNumber    int
 	databaseURL   string
+	databaseType  string
 	conf          *tls.Config
 	verbose       bool
 	concurrency   int
@@ -40,7 +41,15 @@ func main() {
 	parseCommandLine()
 
 	// Populates the db variable
-	databaseURL = "certificates.sqlite3"
+	// databaseURL = "certificates.sqlite3"
+	dbUser := "archiver"
+	dbPassword := ":Sd_NTy]Nn[`<^,+1}3itM^N3#nw"
+	dbPassword = "kikoo"
+
+	databaseType = "postgres"
+	// TODO: better handling of the credentials (for instance, escape % characters)
+	// Add ?sslmode=verify-full to the end if the server supports SSL
+	databaseURL = "postgres://" + dbUser + ":" + dbPassword + "@db:5432/archives?sslmode=disable"
 	SetupDB()
 
 	// Configure the TLS client
