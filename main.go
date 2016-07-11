@@ -77,47 +77,50 @@ func main() {
 		}
 	}
 
-	finishedFlag = false
+	if len(hosts) > 0 {
 
-	// Create the channel into which the grabber will send the certificates
-	certsChan := make(chan certProbe)
-	defer close(certsChan)
+		finishedFlag = false
 
-	// Create the channels to keep stats
-	countChan := make(chan CertStat)
-	hostCountChan := make(chan int)
-	defer close(countChan)
-	defer close(hostCountChan)
+		// Create the channel into which the grabber will send the certificates
+		certsChan := make(chan certProbe)
+		defer close(certsChan)
 
-	// Create the channel for worker statuses
-	workersStateChan := make(chan int)
-	defer close(workersStateChan)
+		// Create the channels to keep stats
+		countChan := make(chan CertStat)
+		hostCountChan := make(chan int)
+		defer close(countChan)
+		defer close(hostCountChan)
 
-	// Package all these channels
-	commChans := CommChans{certsChan, countChan, hostCountChan, workersStateChan}
+		// Create the channel for worker statuses
+		workersStateChan := make(chan int)
+		defer close(workersStateChan)
 
-	// Loop on the list of hosts
-	for workerID := 0; workerID < concurrency; workerID++ {
-		// Cut the list
-		workerHosts := hosts[len(hosts)/concurrency*workerID : len(hosts)/concurrency*(workerID+1)]
-		if verbose {
-			fmt.Printf("Starting worker #%d with %d hosts\n", workerID+1, len(workerHosts))
+		// Package all these channels
+		commChans := CommChans{certsChan, countChan, hostCountChan, workersStateChan}
+
+		// Loop on the list of hosts
+		for workerID := 0; workerID < concurrency; workerID++ {
+			// Cut the list
+			workerHosts := hosts[len(hosts)/concurrency*workerID : len(hosts)/concurrency*(workerID+1)]
+			if verbose {
+				fmt.Printf("Starting worker #%d with %d hosts\n", workerID+1, len(workerHosts))
+			}
+
+			go runWorker(workerHosts, commChans)
 		}
 
-		go runWorker(workerHosts, commChans)
-	}
+		// Display the stats in real-time
+		go displayStats(commChans, len(hosts))
 
-	// Display the stats in real-time
-	go displayStats(commChans, len(hosts))
+		// Detect end of execution for the workers
+		go monitorWorkers(commChans, concurrency)
 
-	// Detect end of execution for the workers
-	go monitorWorkers(commChans, concurrency)
-
-	// Receive the certProbes
-	for !finishedFlag {
-		cert := <-certsChan
-		// TODO: check the return value of SaveCertificate
-		SaveCertificate(cert)
+		// Receive the certProbes
+		for !finishedFlag {
+			cert := <-certsChan
+			// TODO: check the return value of SaveCertificate
+			SaveCertificate(cert)
+		}
 	}
 
 	// Don't forget to close the DB
@@ -128,9 +131,17 @@ func runWorker(hosts []string, commChans CommChans) {
 	for id := 0; id < len(hosts); id++ {
 		// One new host processed
 		commChans.hostCountChan <- 1
-		markHostStared(hosts[id])
+
+		if hostsFromDB {
+			markHostStared(hosts[id])
+		}
+
+		// Actually do the job
 		grabCert(hosts[id], commChans)
-		markHostFinished(hosts[id])
+
+		if hostsToDB {
+			markHostFinished(hosts[id])
+		}
 	}
 	// When all the hosts have been processed, signal it
 	commChans.workersStateChan <- 1
