@@ -6,10 +6,12 @@ import (
 )
 
 var (
-	db          *sql.DB
-	stmtAddOk   *sql.Stmt
-	stmtAddFail *sql.Stmt
-	stmtAddHost *sql.Stmt
+	db               *sql.DB
+	stmtAddOk        *sql.Stmt
+	stmtAddFail      *sql.Stmt
+	stmtAddHost      *sql.Stmt
+	stmtHostStarted  *sql.Stmt
+	stmtHostFinished *sql.Stmt
 )
 
 // SetupDB initializes the DB (create the file if necessary)
@@ -32,6 +34,12 @@ func SetupDB() {
         WHERE NOT EXISTS
         (SELECT id FROM hosts WHERE host = $1);`,
 	)
+	checkErr(err)
+
+	stmtHostStarted, err = db.Prepare("UPDATE hosts SET started_on = now() WHERE host = $1")
+	checkErr(err)
+
+	stmtHostFinished, err = db.Prepare("UPDATE hosts SET finished = true WHERE host = $1")
 	checkErr(err)
 }
 
@@ -61,7 +69,7 @@ func SaveCertificate(cert certProbe) int64 {
 // loadHostsListFromDB returns a list of hosts to process from the DB
 func loadHostsListFromDB() []string {
 	// Extract hosts from DB (not finished and started more than 1h ago)
-	rows, err := db.Query("SELECT host FROM hosts WHERE NOT finished AND now() - started_on > interval '1 hour'")
+	rows, err := db.Query("SELECT host FROM hosts WHERE NOT finished AND (started_on IS NULL OR now() - started_on > interval '1 hour')")
 	defer rows.Close()
 	checkErr(err)
 
@@ -89,4 +97,14 @@ func saveHostsListsToDB(hosts []string) int64 {
 	}
 
 	return affected
+}
+
+func markHostStared(host string) {
+	_, err := stmtHostStarted.Exec(host)
+	checkErr(err)
+}
+
+func markHostFinished(host string) {
+	_, err := stmtHostFinished.Exec(host)
+	checkErr(err)
 }

@@ -128,7 +128,9 @@ func runWorker(hosts []string, commChans CommChans) {
 	for id := 0; id < len(hosts); id++ {
 		// One new host processed
 		commChans.hostCountChan <- 1
+		markHostStared(hosts[id])
 		grabCert(hosts[id], commChans)
+		markHostFinished(hosts[id])
 	}
 	// When all the hosts have been processed, signal it
 	commChans.workersStateChan <- 1
