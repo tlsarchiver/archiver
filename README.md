@@ -15,6 +15,7 @@ This archiver expects to find a PostgreSQL database, with all the schemas in pla
 ## Known bugs
 
 * on the first run, the DB is created but something goes wrong and the program has to be re-started (?) [nope ?]
+* when the list of hosts is empty, freeze
 
 ## Dockerizing it
 

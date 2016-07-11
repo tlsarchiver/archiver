@@ -19,6 +19,8 @@ var (
 	concurrency   int
 	hostsFilename string
 	finishedFlag  bool
+	hostsFromDB   bool
+	hostsToDB     bool
 )
 
 // CommChans groups all the communication channels necessary to communicate
@@ -45,11 +47,13 @@ func main() {
 	dbUser := "archiver"
 	dbPassword := ":Sd_NTy]Nn[`<^,+1}3itM^N3#nw"
 	dbPassword = "kikoo"
+	dbHost := "localhost"
+	dbPort := "5432"
 
 	databaseType = "postgres"
 	// TODO: better handling of the credentials (for instance, escape % characters)
 	// Add ?sslmode=verify-full to the end if the server supports SSL
-	databaseURL = "postgres://" + dbUser + ":" + dbPassword + "@db:5432/archives?sslmode=disable"
+	databaseURL = "postgres://" + dbUser + ":" + dbPassword + "@" + dbHost + ":" + dbPort + "/archives?sslmode=disable"
 	SetupDB()
 
 	// Configure the TLS client
@@ -59,8 +63,19 @@ func main() {
 	}
 
 	// Load the hosts
-	hosts := loadHostsList(hostsFilename)
-	fmt.Printf("Loaded %d hosts from %s\n", len(hosts), hostsFilename)
+	var hosts []string
+	if hostsFromDB {
+		hosts = loadHostsListFromDB()
+		fmt.Printf("Loaded %d hosts from database\n", len(hosts))
+	} else {
+		hosts = loadHostsListFromFile(hostsFilename)
+		fmt.Printf("Loaded %d hosts from %s\n", len(hosts), hostsFilename)
+
+		if hostsToDB {
+			affected := saveHostsListsToDB(hosts)
+			fmt.Printf("Saved %d new hosts to the database\n", affected)
+		}
+	}
 
 	finishedFlag = false
 
@@ -119,7 +134,7 @@ func runWorker(hosts []string, commChans CommChans) {
 	commChans.workersStateChan <- 1
 }
 
-func loadHostsList(filename string) []string {
+func loadHostsListFromFile(filename string) []string {
 
 	// Open the given file, one host per line
 	f, err := os.Open(filename)
@@ -165,6 +180,8 @@ func parseCommandLine() {
 	flag.IntVar(&concurrency, "concurrency", 50,
 		"Number of workers")
 	flag.BoolVar(&verbose, "v", false, "Verbose logging")
+	flag.BoolVar(&hostsToDB, "hoststodb", false, "Load hosts to the DB")
+	flag.BoolVar(&hostsFromDB, "hostsfromdb", false, "Load hosts from the DB")
 	flag.StringVar(&hostsFilename, "f", "top-hosts-alexa.txt",
 		"File containing the list of hosts to scan")
 
@@ -179,4 +196,8 @@ func parseCommandLine() {
 	}
 
 	flag.Parse()
+
+	if hostsFromDB && hostsToDB {
+		fmt.Fprintln(os.Stderr, "You cannot load the hosts from the DB and write them to the DB, no host will be written in the DB!")
+	}
 }

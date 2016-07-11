@@ -10,3 +10,10 @@ CREATE TABLE certificates (
     failure_error     TEXT,
     timestamp         TIMESTAMP WITH TIME ZONE NOT NULL
 );
+
+CREATE TABLE hosts (
+    id                SERIAL PRIMARY KEY,
+    host              TEXT NOT NULL UNIQUE,
+    started_on        TIMESTAMP WITH TIME ZONE,
+    finished          BOOLEAN DEFAULT false
+);

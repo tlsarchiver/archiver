@@ -9,6 +9,7 @@ var (
 	db          *sql.DB
 	stmtAddOk   *sql.Stmt
 	stmtAddFail *sql.Stmt
+	stmtAddHost *sql.Stmt
 )
 
 // SetupDB initializes the DB (create the file if necessary)
@@ -23,6 +24,14 @@ func SetupDB() {
 	checkErr(err)
 
 	stmtAddOk, err = db.Prepare("INSERT INTO certificates (host, ip, protocol, ciphersuite, certificate_idx, certificate_raw, timestamp) VALUES ($1, $2, $3, $4, $5, $6, $7)")
+	checkErr(err)
+
+	stmtAddHost, err = db.Prepare(
+		`INSERT INTO hosts (host)
+        SELECT ($1)
+        WHERE NOT EXISTS
+        (SELECT id FROM hosts WHERE host = $1);`,
+	)
 	checkErr(err)
 }
 
@@ -47,4 +56,37 @@ func SaveCertificate(cert certProbe) int64 {
 	checkErr(err)
 
 	return affect
+}
+
+// loadHostsListFromDB returns a list of hosts to process from the DB
+func loadHostsListFromDB() []string {
+	// Extract hosts from DB (not finished and started more than 1h ago)
+	rows, err := db.Query("SELECT host FROM hosts WHERE NOT finished AND now() - started_on > interval '1 hour'")
+	defer rows.Close()
+	checkErr(err)
+
+	var hosts []string
+	for rows.Next() {
+		var host string
+		err = rows.Scan(&host)
+		checkErr(err)
+		hosts = append(hosts, host)
+	}
+
+	return hosts
+}
+
+// Saves the list of hosts into the DB
+func saveHostsListsToDB(hosts []string) int64 {
+	var affected int64
+	affected = 0
+	for hostI := 0; hostI < len(hosts); hostI++ {
+		res, err := stmtAddHost.Exec(hosts[hostI])
+		checkErr(err)
+		affect, err := res.RowsAffected()
+		checkErr(err)
+		affected += affect
+	}
+
+	return affected
 }
