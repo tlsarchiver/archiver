@@ -13,7 +13,7 @@ CREATE TABLE certificates (
 
 CREATE TABLE hosts (
     id                SERIAL PRIMARY KEY,
-    host              TEXT NOT NULL UNIQUE,
+    host              VARCHAR(255) NOT NULL UNIQUE,
     started_on        TIMESTAMP WITH TIME ZONE,
     finished          BOOLEAN DEFAULT false
 );

@@ -30,7 +30,7 @@ func SetupDB() {
 
 	stmtAddHost, err = db.Prepare(
 		`INSERT INTO hosts (host)
-        SELECT ($1)
+        SELECT CAST($1 AS VARCHAR)
         WHERE NOT EXISTS
         (SELECT id FROM hosts WHERE host = $1);`,
 	)

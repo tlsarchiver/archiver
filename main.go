@@ -72,8 +72,11 @@ func main() {
 		fmt.Printf("Loaded %d hosts from %s\n", len(hosts), hostsFilename)
 
 		if hostsToDB {
+			fmt.Println("Saving these hosts into the database...")
 			affected := saveHostsListsToDB(hosts)
-			fmt.Printf("Saved %d new hosts to the database\n", affected)
+			fmt.Printf("Saved %d new hosts to the database. Exiting...\n", affected)
+			fmt.Println("You can now re-run the archiver with the -hostsfromdb flag to use the loaded hosts(s).")
+			os.Exit(0)
 		}
 	}
 
@@ -139,7 +142,7 @@ func runWorker(hosts []string, commChans CommChans) {
 		// Actually do the job
 		grabCert(hosts[id], commChans)
 
-		if hostsToDB {
+		if hostsFromDB {
 			markHostFinished(hosts[id])
 		}
 	}
