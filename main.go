@@ -12,8 +12,7 @@ import (
 
 var (
 	portNumber    int
-	databaseURL   string
-	databaseType  string
+	dbConfig      DatabaseConfig
 	conf          *tls.Config
 	verbose       bool
 	concurrency   int
@@ -42,19 +41,10 @@ func main() {
 	// Parse the command line parameters
 	parseCommandLine()
 
-	// Populates the db variable
-	// databaseURL = "certificates.sqlite3"
-	dbUser := "archiver"
-	dbPassword := ":Sd_NTy]Nn[`<^,+1}3itM^N3#nw"
-	dbPassword = "kikoo"
-	dbHost := "localhost"
-	dbPort := "5432"
+	// Populates the db configuration from the environment variables
+	dbConfig := parseConfiguration()
 
-	databaseType = "postgres"
-	// TODO: better handling of the credentials (for instance, escape % characters)
-	// Add ?sslmode=verify-full to the end if the server supports SSL
-	databaseURL = "postgres://" + dbUser + ":" + dbPassword + "@" + dbHost + ":" + dbPort + "/archives?sslmode=disable"
-	SetupDB()
+	SetupDB(dbConfig)
 
 	// Configure the TLS client
 	conf = &tls.Config{
@@ -205,10 +195,19 @@ func parseCommandLine() {
 		fmt.Fprintf(os.Stderr, strings.Join([]string{
 			"Retrieve the TLS certificate of the given hosts and stores the results inside a database.",
 			"",
-			"Usage: ./tls-cert-shopping [-f top-hosts-alexa.txt] [-v] [-concurrency 50]",
+			"Usage: " + os.Args[0] + " [-f top-hosts-alexa.txt] [-v] [-concurrency 50]",
 			"",
 		}, "\n"))
 		flag.PrintDefaults()
+		fmt.Fprintf(os.Stderr, strings.Join([]string{
+			"",
+			"Database configuration is set through environment variables:",
+			"* ARCHIVER_DBUSER \t(default: archiver)",
+			"* ARCHIVER_DBPASSWORD \t(default: empty)",
+			"* ARCHIVER_DBHOST \t(default: localhost)",
+			"* ARCHIVER_DBPORT \t(default: 5432)",
+			"* ARCHIVER_DBTYPE \t(default: postgres)",
+		}, "\n"))
 	}
 
 	flag.Parse()

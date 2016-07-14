@@ -15,11 +15,11 @@ var (
 )
 
 // SetupDB initializes the DB (create the file if necessary)
-func SetupDB() {
+func SetupDB(dbConfig DatabaseConfig) {
 	var err error
 
 	// Open the database, being sure it has been installed
-	db, _ = sql.Open(databaseType, databaseURL)
+	db, _ = sql.Open(dbConfig.dbType, dbConfig.buildDbURL())
 
 	// Prepare the requests we will be using
 	stmtAddFail, err = db.Prepare("INSERT INTO certificates (host, ip, failed, failure_error, timestamp) VALUES ($1, $2, $3, $4, $5)")
