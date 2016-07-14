@@ -14,7 +14,7 @@ var (
 	stmtHostFinished *sql.Stmt
 )
 
-// SetupDB initializes the DB (create the file if necessary)
+// SetupDB initializes the DB
 func SetupDB(dbConfig DatabaseConfig) {
 	var err error
 

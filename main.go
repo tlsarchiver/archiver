@@ -12,14 +12,13 @@ import (
 
 var (
 	portNumber    int
-	dbConfig      DatabaseConfig
 	conf          *tls.Config
 	verbose       bool
 	concurrency   int
 	hostsFilename string
-	finishedFlag  bool
 	hostsFromDB   bool
 	hostsToDB     bool
+	finishedFlag  bool
 )
 
 // CommChans groups all the communication channels necessary to communicate
@@ -44,6 +43,7 @@ func main() {
 	// Populates the db configuration from the environment variables
 	dbConfig := parseConfiguration()
 
+	// Setup the DB
 	SetupDB(dbConfig)
 
 	// Configure the TLS client
