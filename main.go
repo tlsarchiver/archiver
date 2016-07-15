@@ -207,6 +207,7 @@ func parseCommandLine() {
 			"* ARCHIVER_DBHOST \t(default: localhost)",
 			"* ARCHIVER_DBPORT \t(default: 5432)",
 			"* ARCHIVER_DBTYPE \t(default: postgres)",
+			"",
 		}, "\n"))
 	}
 
