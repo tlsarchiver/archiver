@@ -3,9 +3,12 @@ package main
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
 	"fmt"
 	"log"
+	"math/big"
 	"net"
+	"strings"
 	"time"
 )
 
@@ -18,6 +21,25 @@ type certProbe struct {
 	cert        *x509.Certificate
 	failure     error
 	timestamp   time.Time
+	certData    []byte
+}
+
+// CertData contains interesting parts of a certificate
+type CertData struct {
+	SubjectCN          string
+	SubjectO           string
+	SubjectOU          []string
+	SubjectCountry     []string
+	IssuerCN           string
+	IssuerO            string
+	IssuerOU           []string
+	IssuerCountry      []string
+	NotBefore          time.Time
+	NotAfter           time.Time
+	FingerprintSHA1    string
+	SignatureAlgorithm string
+	SerialNumber       *big.Int
+	X509Version        int
 }
 
 // PrintCertificate prints the given certificate in a user-friendly way
@@ -89,25 +111,25 @@ func grabCert(host string, commChans CommChans) {
 			fmt.Println("Handshake was not complete!!")
 		}
 
-		// Pretty-print the protocol
-		var protocol string
-		switch cstate.Version {
-		case tls.VersionTLS12:
-			protocol = "TLS 1.2"
-		case tls.VersionTLS11:
-			protocol = "TLS 1.1"
-		case tls.VersionTLS10:
-			protocol = "TLS 1.0"
-		case tls.VersionSSL30:
-			protocol = "SSL 3.0"
-		default:
-			protocol = "something quite strange I never seen before ("
-		}
-
 		// Cipher suite
 		cipherSuite := cstate.CipherSuite
 
 		if verbose {
+			// Pretty-print the protocol
+			var protocol string
+			switch cstate.Version {
+			case tls.VersionTLS12:
+				protocol = "TLS 1.2"
+			case tls.VersionTLS11:
+				protocol = "TLS 1.1"
+			case tls.VersionTLS10:
+				protocol = "TLS 1.0"
+			case tls.VersionSSL30:
+				protocol = "SSL 3.0"
+			default:
+				protocol = "something quite strange I've never seen before ("
+			}
+
 			fmt.Printf("Server used %s (ciphersuite %d) and sent %d certificates:\n", protocol, cipherSuite, len(certs))
 		}
 
@@ -122,10 +144,13 @@ func grabCert(host string, commChans CommChans) {
 
 			// (Re)build the object
 			certprobe.protocol = cstate.Version
-			certprobe.protocol = cstate.Version
 			certprobe.cipherSuite = cipherSuite
 			certprobe.certID = id
 			certprobe.cert = certs[id]
+			// Extract the useful data
+			certDataAsByte, err := json.Marshal(certprobe.extractData())
+			checkErr(err)
+			certprobe.certData = certDataAsByte
 
 			// Send the certificate information into the tube
 			commChans.certsChan <- certprobe
@@ -137,4 +162,42 @@ func failProbe(certprobe certProbe, err error, commChans CommChans) {
 	certprobe.failure = err
 	commChans.certsChan <- certprobe
 	log.Println(err)
+}
+
+func (cert certProbe) extractData() CertData {
+	var cdata CertData
+	cdata.SubjectCN = cert.cert.Subject.CommonName
+	// cdata.SerialNumber = cert.cert.Subject.SerialNumber !?
+	cdata.SubjectO = extractFromArray(cert.cert.Subject.Organization)
+	cdata.SubjectOU = cert.cert.Subject.OrganizationalUnit
+	cdata.SubjectCountry = cert.cert.Subject.Country
+
+	cdata.X509Version = cert.cert.Version
+	cdata.SerialNumber = cert.cert.SerialNumber
+
+	// WTF: https://golang.org/src/crypto/x509/x509.go?s=4230:4257#L150
+	// Method String should work...
+	// cdata.SignatureAlgorithm = cert.cert.SignatureAlgorithm.String()
+
+	// cdata.FingerprintSHA1 = cert.cert.PublicKey
+
+	cdata.NotAfter = cert.cert.NotAfter
+
+	cdata.IssuerCN = cert.cert.Issuer.CommonName
+	cdata.IssuerO = extractFromArray(cert.cert.Issuer.Organization)
+	cdata.IssuerOU = cert.cert.Issuer.OrganizationalUnit
+	cdata.IssuerCountry = cert.cert.Issuer.Country
+
+	return cdata
+}
+
+func extractFromArray(values []string) string {
+	if len(values) == 1 {
+		return values[0]
+	} else if len(values) == 0 {
+		return ""
+	} else {
+		log.Printf("Unable to analyze the following array (len=%d): \n%s", len(values), strings.Join(values, "\n"))
+		panic("More than one element in the array")
+	}
 }

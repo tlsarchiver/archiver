@@ -8,7 +8,8 @@ CREATE TABLE certificates (
     certificate_raw   BYTEA,
     failed            BOOLEAN DEFAULT false,
     failure_error     TEXT,
-    timestamp         TIMESTAMP WITH TIME ZONE NOT NULL
+    timestamp         TIMESTAMP WITH TIME ZONE NOT NULL,
+    cert_content      JSONB
 );
 
 CREATE TABLE hosts (
