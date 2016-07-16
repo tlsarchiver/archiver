@@ -3,15 +3,17 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 )
 
 // The DatabaseConfig contains the configuration parameters for the database
 type DatabaseConfig struct {
-	dbType     string
-	dbUser     string
-	dbPassword string
-	dbHost     string
-	dbPort     string
+	dbType       string
+	dbUser       string
+	dbPassword   string
+	dbHost       string
+	dbPort       string
+	maxOpenConns int
 }
 
 // Build the database URL from the parameters
@@ -34,6 +36,10 @@ func parseConfiguration() DatabaseConfig {
 	dbConfig.dbPassword = getEnv("ARCHIVER_DBPASSWORD", "")
 	dbConfig.dbHost = getEnv("ARCHIVER_DBHOST", "localhost")
 	dbConfig.dbPort = getEnv("ARCHIVER_DBPORT", "5432")
+
+	var err error
+	dbConfig.maxOpenConns, err = strconv.Atoi(getEnv("ARCHIVER_DBMAXOPENCONNS", "100"))
+	checkErr(err)
 
 	if verbose {
 		fmt.Printf("Database configuration: %+v\n", dbConfig)

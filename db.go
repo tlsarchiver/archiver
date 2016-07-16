@@ -20,6 +20,9 @@ func SetupDB(dbConfig DatabaseConfig) {
 
 	// Open the database, being sure it has been installed
 	db, _ = sql.Open(dbConfig.dbType, dbConfig.buildDbURL())
+	// Limit the number of open connections to the database, even if this means we
+	// need to wait for an existing transaction to finish and free its connection.
+	db.SetMaxOpenConns(dbConfig.maxOpenConns)
 
 	// Prepare the requests we will be using
 	stmtAddFail, err = db.Prepare("INSERT INTO certificates (host, ip, failed, failure_error, timestamp) VALUES ($1, $2, $3, $4, $5)")
