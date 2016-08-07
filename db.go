@@ -2,7 +2,9 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	_ "github.com/lib/pq"
+	"os"
 )
 
 var (
@@ -23,6 +25,13 @@ func SetupDB(dbConfig DatabaseConfig) {
 	// Limit the number of open connections to the database, even if this means we
 	// need to wait for an existing transaction to finish and free its connection.
 	db.SetMaxOpenConns(dbConfig.maxOpenConns)
+
+	// Open doesn't open a connection. Validate DSN data:
+	err = db.Ping()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Unable to open a connection to the database!")
+		panic(err.Error())
+	}
 
 	// Prepare the requests we will be using
 	stmtAddFail, err = db.Prepare("INSERT INTO certificates (host, ip, failed, failure_error, timestamp) VALUES ($1, $2, $3, $4, $5)")
