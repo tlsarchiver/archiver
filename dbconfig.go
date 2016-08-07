@@ -41,7 +41,7 @@ func parseConfiguration() DatabaseConfig {
 	dbConfig.maxOpenConns, err = strconv.Atoi(getEnv("ARCHIVER_DBMAXOPENCONNS", "100"))
 	checkErr(err)
 
-	if verbose {
+	if configOptions.verbose {
 		fmt.Printf("Database configuration: %+v\n", dbConfig)
 	}
 

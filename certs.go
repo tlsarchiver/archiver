@@ -56,7 +56,7 @@ func PrintCertificate(cert *x509.Certificate) {
 
 func grabCert(host string, commChans CommChans) {
 
-	if verbose {
+	if configOptions.verbose {
 		fmt.Printf("\nProbing server %s...\n", host)
 	}
 
@@ -78,15 +78,27 @@ func grabCert(host string, commChans CommChans) {
 		// Now we know the IP
 		certprobe.IP = ips[i].String()
 
-		if verbose {
+		if configOptions.verbose {
 			fmt.Printf("> Trying IP %s\n", certprobe.IP)
 		}
 
 		// If we are dealing with IPv6, we need to add brackets.
 		var addr string
 		if ips[i].To4() != nil {
+			// This is an IPv4 host
+
+			if configOptions.IPv6only {
+				continue // Do not process this host
+			}
+
 			addr = ips[i].String()
 		} else {
+			// This is an IPv6 host
+
+			if configOptions.IPv4only {
+				continue // Do not process this host
+			}
+
 			addr = "[" + ips[i].String() + "]"
 		}
 
@@ -114,7 +126,7 @@ func grabCert(host string, commChans CommChans) {
 		// Cipher suite
 		cipherSuite := cstate.CipherSuite
 
-		if verbose {
+		if configOptions.verbose {
 			// Pretty-print the protocol
 			var protocol string
 			switch cstate.Version {
@@ -138,7 +150,7 @@ func grabCert(host string, commChans CommChans) {
 
 		// Analyze presented certificates
 		for id := 0; id < len(certs); id++ {
-			if verbose {
+			if configOptions.verbose {
 				PrintCertificate(certs[id])
 			}
 

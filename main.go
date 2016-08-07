@@ -3,22 +3,9 @@ package main
 import (
 	"bufio"
 	"crypto/tls"
-	"flag"
 	"fmt"
 	"log"
 	"os"
-	"strings"
-)
-
-var (
-	portNumber    int
-	conf          *tls.Config
-	verbose       bool
-	concurrency   int
-	hostsFilename string
-	hostsFromDB   bool
-	hostsToDB     bool
-	finishedFlag  bool
 )
 
 // CommChans groups all the communication channels necessary to communicate
@@ -33,6 +20,12 @@ type CommChans struct {
 	// State of the workers, to detect when all hosts have been parsed
 	workersStateChan chan int
 }
+
+var (
+	conf          *tls.Config
+	finishedFlag  bool
+	configOptions ConfigOptions
+)
 
 func main() {
 	log.SetFlags(log.Lshortfile)
@@ -54,14 +47,14 @@ func main() {
 
 	// Load the hosts
 	var hosts []string
-	if hostsFromDB {
+	if configOptions.hostsFromDB {
 		hosts = loadHostsListFromDB()
 		fmt.Printf("Loaded %d hosts from database\n", len(hosts))
 	} else {
-		hosts = loadHostsListFromFile(hostsFilename)
-		fmt.Printf("Loaded %d hosts from %s\n", len(hosts), hostsFilename)
+		hosts = loadHostsListFromFile(configOptions.hostsFilename)
+		fmt.Printf("Loaded %d hosts from %s\n", len(hosts), configOptions.hostsFilename)
 
-		if hostsToDB {
+		if configOptions.hostsToDB {
 			fmt.Println("Saving these hosts into the database...")
 			affected := saveHostsListsToDB(hosts)
 			fmt.Printf("Saved %d new hosts to the database. Exiting...\n", affected)
@@ -92,10 +85,10 @@ func main() {
 		commChans := CommChans{certsChan, countChan, hostCountChan, workersStateChan}
 
 		// Loop on the list of hosts
-		for workerID := 0; workerID < concurrency; workerID++ {
+		for workerID := 0; workerID < configOptions.concurrency; workerID++ {
 			// Cut the list
-			workerHosts := hosts[len(hosts)/concurrency*workerID : len(hosts)/concurrency*(workerID+1)]
-			if verbose {
+			workerHosts := hosts[len(hosts)/configOptions.concurrency*workerID : len(hosts)/configOptions.concurrency*(workerID+1)]
+			if configOptions.verbose {
 				fmt.Printf("Starting worker #%d with %d hosts\n", workerID+1, len(workerHosts))
 			}
 
@@ -106,7 +99,7 @@ func main() {
 		go displayStats(commChans, len(hosts))
 
 		// Detect end of execution for the workers
-		go monitorWorkers(commChans, concurrency)
+		go monitorWorkers(commChans, configOptions.concurrency)
 
 		// Receive the certProbes
 		for !finishedFlag {
@@ -125,14 +118,14 @@ func runWorker(hosts []string, commChans CommChans) {
 		// One new host processed
 		commChans.hostCountChan <- 1
 
-		if hostsFromDB {
+		if configOptions.hostsFromDB {
 			markHostStared(hosts[id])
 		}
 
 		// Actually do the job
 		grabCert(hosts[id], commChans)
 
-		if hostsFromDB {
+		if configOptions.hostsFromDB {
 			markHostFinished(hosts[id])
 		}
 	}
@@ -179,42 +172,5 @@ func checkErr(err error) {
 	if err != nil {
 		log.Println(err)
 		panic("Aborting.")
-	}
-}
-
-func parseCommandLine() {
-	flag.IntVar(&concurrency, "concurrency", 50,
-		"Number of workers")
-	flag.BoolVar(&verbose, "v", false, "Verbose logging")
-	flag.BoolVar(&hostsToDB, "hoststodb", false, "Load hosts to the DB")
-	flag.BoolVar(&hostsFromDB, "hostsfromdb", false, "Load hosts from the DB")
-	flag.StringVar(&hostsFilename, "f", "top-hosts-alexa.txt",
-		"File containing the list of hosts to scan")
-
-	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, strings.Join([]string{
-			"Retrieve the TLS certificate of the given hosts and stores the results inside a database.",
-			"",
-			"Usage: " + os.Args[0] + " [-f top-hosts-alexa.txt] [-v] [-concurrency 50]",
-			"",
-		}, "\n"))
-		flag.PrintDefaults()
-		fmt.Fprintf(os.Stderr, strings.Join([]string{
-			"",
-			"Database configuration is set through environment variables:",
-			"* ARCHIVER_DBUSER \t(default: archiver)",
-			"* ARCHIVER_DBPASSWORD \t(default: empty)",
-			"* ARCHIVER_DBHOST \t(default: localhost)",
-			"* ARCHIVER_DBPORT \t(default: 5432)",
-			"* ARCHIVER_DBTYPE \t(default: postgres)",
-			"* ARCHIVER_DBMAXOPENCONNS \t(default: 100)",
-			"",
-		}, "\n"))
-	}
-
-	flag.Parse()
-
-	if hostsFromDB && hostsToDB {
-		fmt.Fprintln(os.Stderr, "You cannot load the hosts from the DB and write them to the DB, no host will be written in the DB!")
 	}
 }
