@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"crypto/tls"
 	"fmt"
+	"github.com/tlsarchiver/dbconnector"
 	"log"
 	"os"
 )
@@ -34,7 +35,7 @@ func main() {
 	parseCommandLine()
 
 	// Populates the db configuration from the environment variables
-	dbConfig := parseConfiguration()
+	dbConfig := dbconnector.ParseConfiguration()
 
 	// Setup the DB
 	SetupDB(dbConfig)
