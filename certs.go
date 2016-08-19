@@ -215,6 +215,8 @@ func extractFromArray(values []string) string {
 		return ""
 	} else {
 		log.Printf("Unable to analyze the following array (len=%d): \n%s", len(values), strings.Join(values, "\n"))
-		panic("More than one element in the array")
+		log.Printf("Joining lines with newlines")
+//panic("More than one element in the array")
+		return strings.Join(values, "\n")
 	}
 }
