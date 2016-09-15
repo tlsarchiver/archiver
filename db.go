@@ -19,7 +19,7 @@ var (
 func SetupDB(dbConfig dbconnector.DatabaseConfig) {
 	var err error
 
-	db := dbconnector.SetupDB(dbConfig)
+	db = dbconnector.SetupDB(dbConfig)
 
 	// Prepare the requests we will be using
 	stmtAddFail, err = db.Prepare("INSERT INTO certificates (host, ip, failed, failure_error, timestamp) VALUES ($1, $2, $3, $4, $5)")
