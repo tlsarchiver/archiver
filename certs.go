@@ -194,9 +194,13 @@ func (cert certProbe) extractData() CertData {
 	// cdata.SignatureAlgorithm = cert.cert.SignatureAlgorithm.String()
 
 	der, err := x509.MarshalPKIXPublicKey(cert.cert.PublicKey)
-	checkErr(err)
-	fingerprint := sha1.Sum(der)
-	cdata.FingerprintSHA1 = hex.EncodeToString(fingerprint[:])
+	if err != nil {
+		log.Printf("Public key algorithm: %s\n", cert.cert.PublicKeyAlgorithm)
+		log.Println("Failed to extract the fingerprint :'(")
+	} else {
+		fingerprint := sha1.Sum(der)
+		cdata.FingerprintSHA1 = hex.EncodeToString(fingerprint[:])
+	}
 
 	cdata.NotAfter = cert.cert.NotAfter
 
