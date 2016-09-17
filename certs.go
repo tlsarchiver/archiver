@@ -1,10 +1,8 @@
 package main
 
 import (
-	"crypto/sha1"
 	"crypto/tls"
 	"crypto/x509"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -193,14 +191,7 @@ func (cert certProbe) extractData() CertData {
 	// Method String should work...
 	// cdata.SignatureAlgorithm = cert.cert.SignatureAlgorithm.String()
 
-	der, err := x509.MarshalPKIXPublicKey(cert.cert.PublicKey)
-	if err != nil {
-		log.Printf("Public key algorithm: %s\n", cert.cert.PublicKeyAlgorithm)
-		log.Println("Failed to extract the fingerprint :'(")
-	} else {
-		fingerprint := sha1.Sum(der)
-		cdata.FingerprintSHA1 = hex.EncodeToString(fingerprint[:])
-	}
+	cdata.FingerprintSHA1 = SHA1Fingerprint(cert.cert).String()
 
 	cdata.NotAfter = cert.cert.NotAfter
 
