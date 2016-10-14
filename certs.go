@@ -22,6 +22,7 @@ type certProbe struct {
 	failure     error
 	timestamp   time.Time
 	certData    []byte
+	certSHA1    string
 }
 
 // CertData contains interesting parts of a certificate
@@ -163,6 +164,7 @@ func grabCert(host string, commChans CommChans) {
 			certDataAsByte, err := json.Marshal(certprobe.extractData())
 			checkErr(err)
 			certprobe.certData = certDataAsByte
+			certprobe.certSHA1 = SHA1Fingerprint(certprobe.cert).HexString()
 
 			// Send the certificate information into the tube
 			commChans.certsChan <- certprobe
@@ -211,7 +213,6 @@ func extractFromArray(values []string) string {
 	} else {
 		log.Printf("Unable to analyze the following array (len=%d): \n%s", len(values), strings.Join(values, "\n"))
 		log.Printf("Joining lines with newlines")
-//panic("More than one element in the array")
 		return strings.Join(values, "\n")
 	}
 }

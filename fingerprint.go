@@ -34,6 +34,15 @@ func (f Fingerprint) String() string {
 	return buf.String()
 }
 
+// HexString returns the fingerprint as an uppercase hex string
+func (f Fingerprint) HexString() string {
+	var buf bytes.Buffer
+	for _, b := range f {
+		fmt.Fprintf(&buf, "%02X", b)
+	}
+	return buf.String()
+}
+
 // ParseFingerprint parses a colon-delimited series of hexadecimal octets.
 func ParseFingerprint(fp string) (Fingerprint, error) {
 	s := strings.Join(strings.Split(fp, ":"), "")

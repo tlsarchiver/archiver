@@ -25,7 +25,7 @@ func SetupDB(dbConfig dbconnector.DatabaseConfig) {
 	stmtAddFail, err = db.Prepare("INSERT INTO certificates (host, ip, failed, failure_error, timestamp) VALUES ($1, $2, $3, $4, $5)")
 	checkErr(err)
 
-	stmtAddOk, err = db.Prepare("INSERT INTO certificates (host, ip, protocol, ciphersuite, certificate_idx, certificate_raw, timestamp, cert_content) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)")
+	stmtAddOk, err = db.Prepare("INSERT INTO certificates (host, ip, protocol, ciphersuite, certificate_idx, certificate_raw, timestamp, cert_content, cert_sha1) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)")
 	checkErr(err)
 
 	stmtAddHost, err = db.Prepare(
@@ -66,6 +66,7 @@ func SaveCertificate(cert certProbe) int64 {
 			cert.cert.Raw,
 			cert.timestamp,
 			cert.certData,
+			cert.certSHA1,
 		)
 	}
 	checkErr(err)

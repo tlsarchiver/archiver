@@ -5,12 +5,15 @@ CREATE TABLE certificates (
     ciphersuite       INT,
     protocol          INT,
     certificate_idx   INT,
+    cert_sha1         CHAR(40),
     certificate_raw   BYTEA,
     failed            BOOLEAN DEFAULT false,
     failure_error     TEXT,
     timestamp         TIMESTAMP WITH TIME ZONE NOT NULL,
     cert_content      JSONB
 );
+
+CREATE INDEX on certificates (cert_sha1);
 
 CREATE TABLE hosts (
     id                SERIAL PRIMARY KEY,
