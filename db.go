@@ -54,7 +54,7 @@ func SaveCertificate(cert certProbe) int64 {
 	var res sql.Result
 	if cert.failure != nil {
 		// Just save the failure
-		res, err = stmtAddFail.Exec(cert.host, cert.IP, true, string(cert.failure.Error()), cert.timestamp)
+		res, err = stmtAddFail.Exec(cert.host, cert.IP, true, cert.failure.Error(), cert.timestamp)
 	} else {
 		// Save the certificate & connection data
 		res, err = stmtAddOk.Exec(
@@ -79,8 +79,9 @@ func SaveCertificate(cert certProbe) int64 {
 func loadHostsListFromDB() []string {
 	// Extract hosts from DB (not finished and started more than 1h ago)
 	rows, err := db.Query("SELECT host FROM hosts WHERE NOT finished AND (started_on IS NULL OR now() - started_on > interval '1 hour')")
-	defer rows.Close()
 	checkErr(err)
+
+	defer rows.Close()
 
 	var hosts []string
 	for rows.Next() {
