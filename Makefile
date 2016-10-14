@@ -1,3 +1,13 @@
+all: build-image
+
+bake-archiver:
+	CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-s' -o archiver .
+
+build-image: bake-archiver
+	docker build -t tlsarchiver/archiver .
+
+upload-image: build-image
+	docker push tlsarchiver/archiver
 
 # Dependencies for linting Go code
 golint_deps:
