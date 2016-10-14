@@ -1,4 +1,6 @@
-# TLS Archive
+[![Go Report Card](https://goreportcard.com/badge/github.com/tlsarchiver/archiver)](https://goreportcard.com/report/github.com/tlsarchiver/archiver)
+
+# TLS Archiver
 
 This archiver expects to find a PostgreSQL database, with all the schemas in place.
 
