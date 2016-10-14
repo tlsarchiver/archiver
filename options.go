@@ -9,10 +9,6 @@ import (
 
 // ConfigOptions holds the various runtime options
 type ConfigOptions struct {
-	// What port number to use when scanning?
-	portNumber int
-	// Should we provide verbose output?
-	verbose bool
 	// How many workers should we spawn?
 	concurrency int
 	// What is the filename of the list of hosts to load?
@@ -25,6 +21,8 @@ type ConfigOptions struct {
 	IPv4only bool
 	// ...or IPv6 only?
 	IPv6only bool
+	// Should we provide verbose output?
+	verbose bool
 }
 
 func parseCommandLine() {
